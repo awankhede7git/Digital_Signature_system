@@ -3,6 +3,7 @@ from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from db import db, cursor
+from request_routes import request_routes
 
 app = Flask(__name__)
 CORS(app)  # Allow frontend requests
@@ -12,6 +13,8 @@ app.config["JWT_SECRET_KEY"] = "your_secret_key"
 jwt = JWTManager(app)
 
 bcrypt = Bcrypt(app)
+
+app.register_blueprint(request_routes)
 
 @app.route('/')
 def home():

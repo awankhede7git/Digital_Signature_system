@@ -1,0 +1,6 @@
+pip install flask mysql-connector-python python-dotenv
+pip install flask_cors
+pip install flask-bcrypt
+pip install flask-jwt-extended
+
+npm install axios
