@@ -1,11 +1,28 @@
 from flask import Flask, request, jsonify
+import mysql.connector
+from dotenv import load_dotenv
+import os
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from db import db, cursor
 from request_routes import request_routes
 
+load_dotenv()
+
 app = Flask(__name__)
+DB_HOST = os.getenv('DB_HOST')
+DB_USER = os.getenv('DB_USER')
+DB_PASS = os.getenv('DB_PASS')
+DB_NAME = os.getenv('DB_NAME')
+
+db = mysql.connector.connect(
+    host=DB_HOST,
+    user=DB_USER,
+    password=DB_PASS,
+    database=DB_NAME
+)
+cursor = db.cursor()
 CORS(app)  # Allow frontend requests
 
 # JWT Configuration
@@ -69,6 +86,17 @@ def login():
 
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    file = request.files['file']
+    file.save(f'./uploads/{file.filename}')
+    
+    # Store file details in the database
+    query = "INSERT INTO documents (filename, uploaded_by, status) VALUES (%s, %s, %s)"
+    cursor.execute(query, (file.filename, 1, 'Pending'))  # Example: uploaded_by = 1 (dummy user)
+    db.commit()
+
+    return {"message": "File uploaded successfully!"}
 
 if __name__ == "__main__":
     app.run(debug=True)
