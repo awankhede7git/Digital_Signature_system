@@ -58,8 +58,12 @@ def register():
     cursor.execute("INSERT INTO users (email, password_hash, role) VALUES (%s, %s, %s)", (email, hashed_password, role))
     db.commit()
 
-    return jsonify({"success": True, "message": "User registered successfully!"}), 201
+    # Generate token
+    cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+    user_id = cursor.fetchone()[0]
+    token = create_access_token(identity=user_id)
 
+    return jsonify({"success": True, "message": "User registered successfully!", "token": token, "role": role}), 201
 
 #login route
 @app.route('/login', methods=["POST"])
@@ -82,10 +86,18 @@ def login():
 
     if bcrypt.check_password_hash(stored_hashed_password, password):
         token = create_access_token(identity=user_id)
-        return jsonify({"success": True, "token": token, "role": role}), 200
+
+        # Determine redirect URL based on role
+        if role == "faculty":
+            redirect_url = "http://127.0.0.1:5000/api/faculty/requests"
+        else:
+            redirect_url = "http://127.0.0.1:5000/api/submit_request"
+
+        return jsonify({"success": True, "token": token, "role": role, "redirect_url": redirect_url}), 200
 
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
+#upload route
 @app.route('/upload', methods=['POST'])
 def upload_file():
     file = request.files['file']
