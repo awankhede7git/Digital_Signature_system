@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from db import db, cursor
-from request_routes import request_routes
+# from request_routes import request_routes
 
 app = Flask(__name__)
 CORS(app)  # Allow frontend requests
@@ -14,7 +14,7 @@ jwt = JWTManager(app)
 
 bcrypt = Bcrypt(app)
 
-app.register_blueprint(request_routes)
+# app.register_blueprint(request_routes)
 
 @app.route('/')
 def home():
@@ -68,6 +68,71 @@ def login():
         return jsonify({"success": True, "token": token, "role": role}), 200
 
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
+
+
+# ======================= Student Request Routes =======================
+
+@app.route('/api/student/request', methods=["POST"])
+@jwt_required()
+def submit_request():
+    current_user = get_jwt_identity()
+    
+    # Ensure only students can submit requests
+    if current_user["role"] != "student":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    document_url = data.get("document_url")
+
+    if not document_url:
+        return jsonify({"success": False, "message": "Document URL is required"}), 400
+
+    cursor.execute("INSERT INTO requests (student_id, document_url, status) VALUES (%s, %s, %s)",
+                   (current_user["id"], document_url, "pending"))
+    db.commit()
+
+    return jsonify({"success": True, "message": "Request submitted successfully"}), 201
+
+
+# ======================= Faculty Request Routes =======================
+
+@app.route('/api/faculty/requests', methods=["GET"])
+@jwt_required()
+def get_requests():
+    current_user = get_jwt_identity()
+
+    # Ensure only faculty can view requests
+    if current_user["role"] != "faculty":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    cursor.execute("SELECT id, student_id, document_url, status FROM requests WHERE status = 'pending'")
+    requests = cursor.fetchall()
+
+    return jsonify({"success": True, "requests": [
+        {"id": req[0], "student_id": req[1], "document_url": req[2], "status": req[3]} for req in requests
+    ]})
+
+
+@app.route('/api/faculty/respond', methods=["POST"])
+#@jwt_required()
+def respond_to_request():
+    current_user = get_jwt_identity()
+
+    # Ensure only faculty can respond to requests
+    if current_user["role"] != "faculty":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    request_id = data.get("request_id")
+    action = data.get("action")
+
+    if action not in ["approved", "rejected"]:
+        return jsonify({"success": False, "message": "Invalid action"}), 400
+
+    cursor.execute("UPDATE requests SET status = %s WHERE id = %s", (action, request_id))
+    db.commit()
+
+    return jsonify({"success": True, "message": f"Request {action} successfully"})
 
 
 if __name__ == "__main__":
