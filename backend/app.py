@@ -7,7 +7,11 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_jwt_extended import get_jwt_identity
 from db import db, cursor
+from password_validator import PasswordValidator
 # from request_routes import request_routes
+
+schema = PasswordValidator()
+schema.min(8).has().uppercase().has().digits().has().symbols()
 
 load_dotenv()
 
@@ -49,6 +53,9 @@ def register():
     if not email or not password:
         return jsonify({"success": False, "message": "Email and password required"}), 400
 
+    if not schema.validate(password):
+        return jsonify({"success": False, "message": "Password must be at least 8 characters, have an uppercase letter, a number, and a special symbol"}), 400
+    
     # Check if user already exists
     cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
     if cursor.fetchone():
