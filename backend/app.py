@@ -154,7 +154,7 @@ def get_requests():
 
 
 @app.route('/api/faculty/respond', methods=["POST"])
-#@jwt_required()
+@jwt_required()
 def respond_to_request():
     current_user = get_jwt_identity()
 
