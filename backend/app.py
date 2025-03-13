@@ -5,6 +5,7 @@ import os
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
+from flask_jwt_extended import get_jwt_identity
 from db import db, cursor
 # from request_routes import request_routes
 
