@@ -111,29 +111,6 @@ def upload_file():
 
     return {"message": "File uploaded successfully!"}
 
-# ======================= Student Request Routes =======================
-
-@app.route('/api/student/request', methods=["POST"])
-@jwt_required()
-def submit_request():
-    current_user = get_jwt_identity()
-    
-    # Ensure only students can submit requests
-    if current_user["role"] != "student":
-        return jsonify({"success": False, "message": "Unauthorized"}), 403
-
-    data = request.get_json()
-    document_url = data.get("document_url")
-
-    if not document_url:
-        return jsonify({"success": False, "message": "Document URL is required"}), 400
-
-    cursor.execute("INSERT INTO requests (student_id, document_url, status) VALUES (%s, %s, %s)",
-                   (current_user["id"], document_url, "pending"))
-    db.commit()
-
-    return jsonify({"success": True, "message": "Request submitted successfully"}), 201
-
 
 # ======================= Faculty Request Routes =======================
 
@@ -175,6 +152,37 @@ def respond_to_request():
 
     return jsonify({"success": True, "message": f"Request {action} successfully"})
 
+@app.route("/api/faculty/list", methods=["GET"])
+def get_faculty_list():
+    faculty_list = User.query.filter(User.email.like("%faculty%")).all()
+    faculty_data = [{"id": f.id, "email": f.email} for f in faculty_list]
+    return jsonify({"faculty": faculty_data}), 200
+
+
+# ======================= Student Request Routes =======================
+# Submit Student Request
+@app.route("/api/student/request", methods=["POST"])
+@jwt_required()
+def submit_request():
+    data = request.get_json()
+    student_id = get_jwt_identity()
+    faculty_id = data.get("faculty_id")
+    title = data.get("title")
+    description = data.get("description")
+
+    if not faculty_id or not title or not description:
+        return jsonify({"message": "All fields are required"}), 400
+
+    new_request = Request(
+        student_id=student_id,
+        faculty_id=faculty_id,
+        document_url="",
+        status="pending"
+    )
+    db.session.add(new_request)
+    db.session.commit()
+
+    return jsonify({"message": "Request submitted successfully!"}), 201
 
 if __name__ == "__main__":
     app.run(debug=True)
