@@ -99,9 +99,16 @@ def login():
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
 #upload route
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"})
     file = request.files['file']
+<<<<<<< Updated upstream
     file.save(f'./uploads/{file.filename}')
     
     # Store file details in the database
@@ -110,6 +117,36 @@ def upload_file():
     db.commit()
 
     return {"message": "File uploaded successfully!"}
+=======
+    if file.filename == '':
+        return jsonify({"error": "No selected file"})
+    if file:
+        file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(file_path)
+        return jsonify({"message": f"File uploaded successfully to {file_path}"})
+# ======================= Student Request Routes =======================
+
+@app.route('/api/student/request', methods=["POST"])
+@jwt_required()
+def submit_request():
+    current_user = get_jwt_identity()
+    
+    # Ensure only students can submit requests
+    if current_user["role"] != "student":
+        return jsonify({"success": False, "message": "Unauthorized"}), 403
+
+    data = request.get_json()
+    document_url = data.get("document_url")
+
+    if not document_url:
+        return jsonify({"success": False, "message": "Document URL is required"}), 400
+
+    cursor.execute("INSERT INTO requests (student_id, document_url, status) VALUES (%s, %s, %s)",
+                   (current_user["id"], document_url, "pending"))
+    db.commit()
+
+    return jsonify({"success": True, "message": "Request submitted successfully"}), 201
+>>>>>>> Stashed changes
 
 
 # ======================= Faculty Request Routes =======================
