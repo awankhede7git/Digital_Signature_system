@@ -111,51 +111,34 @@ def upload_file():
 
     return {"message": "File uploaded successfully!"}
 
-# ======================= Student Request Routes =======================
-
-@app.route('/api/student/request', methods=["POST"])
-@jwt_required()
-def submit_request():
-    current_user = get_jwt_identity()
-    
-    # Ensure only students can submit requests
-    if current_user["role"] != "student":
-        return jsonify({"success": False, "message": "Unauthorized"}), 403
-
-    data = request.get_json()
-    document_url = data.get("document_url")
-
-    if not document_url:
-        return jsonify({"success": False, "message": "Document URL is required"}), 400
-
-    cursor.execute("INSERT INTO requests (student_id, document_url, status) VALUES (%s, %s, %s)",
-                   (current_user["id"], document_url, "pending"))
-    db.commit()
-
-    return jsonify({"success": True, "message": "Request submitted successfully"}), 201
-
 
 # ======================= Faculty Request Routes =======================
 
-@app.route('/api/faculty/requests', methods=["GET"])
-@jwt_required()
-def get_requests():
-    current_user = get_jwt_identity()
+@app.route("/api/faculty/requests", methods=["GET"])
+def get_faculty_requests():
+    token = request.headers.get("Authorization")
+    if not token:
+        return jsonify({"message": "Token is missing"}), 401
+    
+    user_id = verify_token(token)  # Assuming a function to verify token and extract user ID
+    if not user_id:
+        return jsonify({"message": "Invalid token"}), 401
 
-    # Ensure only faculty can view requests
-    if current_user["role"] != "faculty":
-        return jsonify({"success": False, "message": "Unauthorized"}), 403
+    # Check if the user is a faculty member
+    cursor.execute("SELECT id FROM users WHERE id = %s AND role = 'faculty'", (user_id,))
+    faculty = cursor.fetchone()
+    if not faculty:
+        return jsonify({"message": "Unauthorized access"}), 403
 
-    cursor.execute("SELECT id, student_id, document_url, status FROM requests WHERE status = 'pending'")
+    # Fetch pending requests for this faculty
+    cursor.execute("SELECT id, student_id, document_url FROM requests WHERE faculty_id = %s AND status = 'pending'", (user_id,))
     requests = cursor.fetchall()
 
-    return jsonify({"success": True, "requests": [
-        {"id": req[0], "student_id": req[1], "document_url": req[2], "status": req[3]} for req in requests
-    ]})
+    return jsonify({"requests": requests}), 200
 
 
 @app.route('/api/faculty/respond', methods=["POST"])
-#@jwt_required()
+@jwt_required()
 def respond_to_request():
     current_user = get_jwt_identity()
 
@@ -175,6 +158,39 @@ def respond_to_request():
 
     return jsonify({"success": True, "message": f"Request {action} successfully"})
 
+@app.route("/api/faculties", methods=["GET"])
+def get_faculty_list():
+    cursor = db.connection.cursor()
+    cursor.execute("SELECT id, email FROM users WHERE role = 'faculty'")
+    faculties = cursor.fetchall()
+    cursor.close()
+    return jsonify(faculties)
+
+
+# ======================= Student Request Routes =======================
+# Submit Student Request
+@app.route("/api/student/request", methods=["POST"])
+@jwt_required()
+def submit_request():
+    data = request.get_json()
+    student_id = get_jwt_identity()
+    faculty_id = data.get("faculty_id")
+    title = data.get("title")
+    description = data.get("description")
+
+    if not faculty_id or not title or not description:
+        return jsonify({"message": "All fields are required"}), 400
+
+    new_request = Request(
+        student_id=student_id,
+        faculty_id=faculty_id,
+        document_url="",
+        status="pending"
+    )
+    db.session.add(new_request)
+    db.session.commit()
+
+    return jsonify({"message": "Request submitted successfully!"}), 201
 
 if __name__ == "__main__":
     app.run(debug=True)
