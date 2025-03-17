@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import StudentRequests from "./pages/StudentRequest";
+import FacultyRequests from "./pages/FacultyRequests";
 import './App.css';
 
 function App() {
@@ -17,7 +18,8 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/student-requests" element={<StudentRequests />} />
-        </Routes>
+          <Route path="/faculty-requests" element={<FacultyRequests />} />
+          </Routes>
       </div>
     </Router>
   );

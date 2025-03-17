@@ -114,57 +114,53 @@ def upload_file():
 
 # ======================= Faculty Request Routes =======================
 
+# Fetch faculty-specific requests
 @app.route("/api/faculty/requests", methods=["GET"])
+@jwt_required()
 def get_faculty_requests():
-    token = request.headers.get("Authorization")
-    if not token:
-        return jsonify({"message": "Token is missing"}), 401
+    faculty_id = get_jwt_identity()
+
+    cursor = db.connection.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT id, student_id, document_url, title, description, status 
+        FROM requests 
+        WHERE faculty_id = %s AND status = 'pending'
+    """, (faculty_id,))
     
-    user_id = verify_token(token)  # Assuming a function to verify token and extract user ID
-    if not user_id:
-        return jsonify({"message": "Invalid token"}), 401
-
-    # Check if the user is a faculty member
-    cursor.execute("SELECT id FROM users WHERE id = %s AND role = 'faculty'", (user_id,))
-    faculty = cursor.fetchone()
-    if not faculty:
-        return jsonify({"message": "Unauthorized access"}), 403
-
-    # Fetch pending requests for this faculty
-    cursor.execute("SELECT id, student_id, document_url FROM requests WHERE faculty_id = %s AND status = 'pending'", (user_id,))
     requests = cursor.fetchall()
-
+    cursor.close()
+    
     return jsonify({"requests": requests}), 200
 
 
-@app.route('/api/faculty/respond', methods=["POST"])
+# Approve request (Redirects to eSign page)
+@app.route("/api/faculty/approve", methods=["POST"])
 @jwt_required()
-def respond_to_request():
-    current_user = get_jwt_identity()
-
-    # Ensure only faculty can respond to requests
-    if current_user["role"] != "faculty":
-        return jsonify({"success": False, "message": "Unauthorized"}), 403
-
+def approve_request():
+    faculty_id = get_jwt_identity()
     data = request.get_json()
     request_id = data.get("request_id")
-    action = data.get("action")
 
-    if action not in ["approved", "rejected"]:
-        return jsonify({"success": False, "message": "Invalid action"}), 400
+    if not request_id:
+        return jsonify({"message": "Request ID is required"}), 400
 
-    cursor.execute("UPDATE requests SET status = %s WHERE id = %s", (action, request_id))
-    db.commit()
+    cursor = db.connection.cursor()
+    cursor.execute("UPDATE requests SET status = 'approved' WHERE id = %s AND faculty_id = %s", (request_id, faculty_id))
+    db.connection.commit()
+    cursor.close()
+
+    return jsonify({"message": "Request approved successfully!", "redirect_url": f"/esign/{request_id}"}), 200
+
 
     return jsonify({"success": True, "message": f"Request {action} successfully"})
-
-@app.route("/api/faculties", methods=["GET"])
-def get_faculty_list():
-    cursor = db.connection.cursor()
+@app.route('/api/faculties', methods=['GET'])
+def get_faculties():
+    cursor = db.cursor(dictionary=True)
     cursor.execute("SELECT id, email FROM users WHERE role = 'faculty'")
     faculties = cursor.fetchall()
     cursor.close()
     return jsonify(faculties)
+
 
 
 # ======================= Student Request Routes =======================

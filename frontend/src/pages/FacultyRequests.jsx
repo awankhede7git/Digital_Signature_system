@@ -1,55 +1,68 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const FacultyRequests = () => {
     const [requests, setRequests] = useState([]);
+    const [error, setError] = useState("");
+    const navigate = useNavigate();
 
     useEffect(() => {
+        const fetchRequests = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const res = await axios.get("http://127.0.0.1:5000/api/faculty/requests", {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                setRequests(res.data.requests);
+            } catch (err) {
+                setError("Failed to fetch requests. Please try again.");
+                console.error("Error fetching requests:", err);
+            }
+        };
         fetchRequests();
     }, []);
 
-    const fetchRequests = async () => {
+    const handleApprove = async (requestId) => {
         try {
             const token = localStorage.getItem("token");
-            const res = await axios.get("http://127.0.0.1:5000/api/faculty/requests", {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setRequests(res.data.requests);
-        } catch (error) {
-            console.error("Error fetching requests", error);
-        }
-    };
-
-    const handleResponse = async (requestId, action) => {
-        try {
-            const token = localStorage.getItem("token");
-            await axios.post("http://127.0.0.1:5000/api/faculty/respond", 
-                { request_id: requestId, action },
+            const res = await axios.post(
+                "http://127.0.0.1:5000/api/faculty/approve",
+                { request_id: requestId },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            fetchRequests(); // Refresh list after responding
-        } catch (error) {
-            console.error("Error updating request", error);
+            alert(res.data.message);
+            navigate(`/esign/${requestId}`); // Redirect to eSign page
+        } catch (err) {
+            console.error("Error approving request:", err);
+            alert("Failed to approve request.");
         }
     };
 
     return (
         <div>
-            <h2>Pending Requests</h2>
-            {requests.length === 0 ? (
-                <p>No pending requests.</p>
-            ) : (
-                <ul>
-                    {requests.map((req) => (
+            <h2>Faculty Requests</h2>
+            {error && <p>{error}</p>}
+            <ul>
+                {requests.length > 0 ? (
+                    requests.map((req) => (
                         <li key={req.id}>
-                            <p>Student ID: {req.student_id}</p>
-                            <p>Document: <a href={req.document_url} target="_blank">View</a></p>
-                            <button onClick={() => handleResponse(req.id, "approved")}>Approve</button>
-                            <button onClick={() => handleResponse(req.id, "rejected")}>Reject</button>
+                            <p><strong>Student ID:</strong> {req.student_id}</p>
+                            <p><strong>Title:</strong> {req.title}</p>
+                            <p><strong>Description:</strong> {req.description}</p>
+                            <p>
+                                <strong>Document:</strong>{" "}
+                                <a href={req.document_url} target="_blank" rel="noopener noreferrer">
+                                    View
+                                </a>
+                            </p>
+                            <button onClick={() => handleApprove(req.id)}>Approve & eSign</button>
                         </li>
-                    ))}
-                </ul>
-            )}
+                    ))
+                ) : (
+                    <p>No pending requests.</p>
+                )}
+            </ul>
         </div>
     );
 };

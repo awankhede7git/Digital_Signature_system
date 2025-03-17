@@ -2,87 +2,64 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const StudentRequest = () => {
-  const [facultyList, setFacultyList] = useState([]);
+const StudentRequests = () => {
+  const [faculties, setFaculties] = useState([]);
   const [facultyId, setFacultyId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [message, setMessage] = useState("");
   const navigate = useNavigate();
 
-  // Fetch faculty list from database
   useEffect(() => {
-    const fetchFaculty = async () => {
-      try {
-        const res = await axios.get("http://127.0.0.1:5000/api/faculty/list");
-        setFacultyList(res.data.faculty);
-      } catch (error) {
-        console.error("Error fetching faculty list:", error);
-      }
-    };
-    fetchFaculty();
+    axios.get("http://127.0.0.1:5000/api/faculties")
+      .then((response) => {
+        setFaculties(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching faculties:", error);
+      });
   }, []);
 
-  // Handle form submission
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setMessage("");
-
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        "http://127.0.0.1:5000/api/student/request",
-        { faculty_id: facultyId, title, description },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setMessage(res.data.message);
-      setFacultyId("");
-      setTitle("");
-      setDescription("");
-    } catch (error) {
-      console.error("Error submitting request", error);
-      setMessage("Failed to submit request. Please try again.");
+    if (!facultyId || !title || !description) {
+      alert("All fields are required!");
+      return;
     }
-  };
-
-  // Redirect to Upload Document Page
-  const handleUpload = () => {
-    navigate("/upload");
+    
+    navigate("/fileupload", { state: { facultyId, title, description } });
   };
 
   return (
-    <div>
+    <div className="request-container">
       <h2>Submit a Request</h2>
       <form onSubmit={handleSubmit}>
-        <label>Faculty Name:</label>
+        <label>Faculty:</label>
         <select value={facultyId} onChange={(e) => setFacultyId(e.target.value)} required>
           <option value="">Select Faculty</option>
-          {facultyList.map((faculty) => (
-            <option key={faculty.id} value={faculty.id}>
-              {faculty.email}
-            </option>
+          {faculties.map((faculty) => (
+            <option key={faculty.id} value={faculty.id}>{faculty.email}</option>
           ))}
         </select>
 
-        <label>Request Title:</label>
-        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        <label>Title:</label>
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          required
+        />
 
         <label>Description:</label>
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} required />
+        <textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          required
+        ></textarea>
 
-        <button type="submit">Submit Request</button>
+        <button type="submit">Next</button>
       </form>
-
-      <button onClick={handleUpload}>Upload Document</button>
-
-      {message && <p>{message}</p>}
     </div>
   );
 };
 
-export default StudentRequest;
-
-
-//things to be done (Aveena):
-//add log of all requests sent
-//remove the login andd register thing 
+export default StudentRequests;
