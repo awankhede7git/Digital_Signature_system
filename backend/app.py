@@ -28,7 +28,8 @@ cursor = db.cursor()
 CORS(app)  # Allow frontend requests
 
 # JWT Configuration
-app.config["JWT_SECRET_KEY"] = "your_secret_key"
+app.config["JWT_SECRET_KEY"] = "50c12acb3131ad7eea2c62e3571c1cc90e78021289d17b60f88681b22c8844cb"
+
 jwt = JWTManager(app)
 
 bcrypt = Bcrypt(app)
@@ -194,35 +195,20 @@ def submit_request():
 
 # ======================= Upload file routes - tried by arya =======================
 # Upload document route
-@app.route("/api/student/upload", methods=["POST"])
-@jwt_required()
-def upload_document():
+@app.route("/api/upload", methods=["POST"])
+def upload_file():
     if "file" not in request.files:
-        return jsonify({"message": "No file part"}), 400
+        return jsonify({"error": "No file part"}), 400
 
     file = request.files["file"]
-    request_id = request.form.get("request_id")
 
     if file.filename == "":
-        return jsonify({"message": "No selected file"}), 400
+        return jsonify({"error": "No selected file"}), 400
 
-    if not allowed_file(file.filename):
-        return jsonify({"message": "Invalid file type"}), 400
-
-    if not request_id:
-        return jsonify({"message": "Request ID is required"}), 400
-
-    filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
-    file.save(filepath)
-
-    # Store the document URL in the database
-    document_url = f"/uploads/{filename}"
-    cursor.execute("UPDATE requests SET document_url = %s WHERE id = %s", (document_url, request_id))
-    db.commit()
-
-    return jsonify({"message": "File uploaded successfully!", "document_url": document_url}), 201
-
+    file.save(os.path.join(app.config["UPLOAD_FOLDER"], file.filename))
+    print("File uploaded successfully")
+    
+    return jsonify({"message": "File uploaded successfully"}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
