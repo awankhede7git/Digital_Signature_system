@@ -7,6 +7,7 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_jwt_extended import get_jwt_identity
 from db import db, cursor
+from werkzeug.utils import secure_filename#for uploads
 # from request_routes import request_routes
 
 load_dotenv()
@@ -33,6 +34,22 @@ jwt = JWTManager(app)
 bcrypt = Bcrypt(app)
 
 # app.register_blueprint(request_routes)
+
+#uploads part
+UPLOAD_FOLDER = "uploads"
+ALLOWED_EXTENSIONS = {"pdf", "doc", "docx", "png", "jpg", "jpeg"}
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# Ensure upload directory exists
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+#uploads part
 
 @app.route('/')
 def home():
@@ -97,20 +114,6 @@ def login():
         return jsonify({"success": True, "token": token, "role": role, "redirect_url": redirect_url}), 200
 
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
-
-#upload route
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    file = request.files['file']
-    file.save(f'./uploads/{file.filename}')
-    
-    # Store file details in the database
-    query = "INSERT INTO documents (filename, uploaded_by, status) VALUES (%s, %s, %s)"
-    cursor.execute(query, (file.filename, 1, 'Pending'))  # Example: uploaded_by = 1 (dummy user)
-    db.commit()
-
-    return {"message": "File uploaded successfully!"}
-
 
 # ======================= Faculty Request Routes =======================
 
@@ -187,6 +190,39 @@ def submit_request():
     db.session.commit()
 
     return jsonify({"message": "Request submitted successfully!"}), 201
+
+
+# ======================= Upload file routes - tried by arya =======================
+# Upload document route
+@app.route("/api/student/upload", methods=["POST"])
+@jwt_required()
+def upload_document():
+    if "file" not in request.files:
+        return jsonify({"message": "No file part"}), 400
+
+    file = request.files["file"]
+    request_id = request.form.get("request_id")
+
+    if file.filename == "":
+        return jsonify({"message": "No selected file"}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({"message": "Invalid file type"}), 400
+
+    if not request_id:
+        return jsonify({"message": "Request ID is required"}), 400
+
+    filename = secure_filename(file.filename)
+    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    file.save(filepath)
+
+    # Store the document URL in the database
+    document_url = f"/uploads/{filename}"
+    cursor.execute("UPDATE requests SET document_url = %s WHERE id = %s", (document_url, request_id))
+    db.commit()
+
+    return jsonify({"message": "File uploaded successfully!", "document_url": document_url}), 201
+
 
 if __name__ == "__main__":
     app.run(debug=True)
