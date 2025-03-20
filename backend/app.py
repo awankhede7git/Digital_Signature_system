@@ -116,25 +116,31 @@ def login():
 
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
-# ======================= Faculty Request Routes =======================
 
-# Fetch faculty-specific requests
+
 @app.route("/api/faculty/requests", methods=["GET"])
 @jwt_required()
 def get_faculty_requests():
-    faculty_id = get_jwt_identity()
-
-    cursor = db.connection.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT id, student_id, document_url, title, description, status 
-        FROM requests 
-        WHERE faculty_id = %s AND status = 'pending'
-    """, (faculty_id,))
-    
+    faculty_id = get_jwt_identity()  # Get logged-in faculty ID
+    cursor.execute(
+        "SELECT r.id, u.email AS student_email, r.document_url, r.status FROM requests r JOIN users u ON r.student_id = u.id WHERE r.faculty_id = %s",
+        (faculty_id,),
+    )
     requests = cursor.fetchall()
-    cursor.close()
     
-    return jsonify({"requests": requests}), 200
+    # Convert to JSON format
+    request_list = [
+        {
+            "id": req[0],
+            "student_email": req[1],
+            "document_url": req[2],
+            "status": req[3],
+        }
+        for req in requests
+    ]
+
+    return jsonify(request_list), 200
+
 
 
 # Approve request (Redirects to eSign page)
@@ -157,6 +163,8 @@ def approve_request():
 
 
     return jsonify({"success": True, "message": f"Request {action} successfully"})
+
+
 @app.route('/api/faculties', methods=['GET'])
 def get_faculties():
     cursor = db.cursor(dictionary=True)
@@ -166,9 +174,6 @@ def get_faculties():
     return jsonify(faculties)
 
 
-
-# ======================= Student Request Routes =======================
-# Submit Student Request
 @app.route("/api/student/request", methods=["POST"])
 @jwt_required()
 def submit_request():
@@ -193,22 +198,63 @@ def submit_request():
     return jsonify({"message": "Request submitted successfully!"}), 201
 
 
-# ======================= Upload file routes - tried by arya =======================
 # Upload document route
-@app.route("/api/upload", methods=["POST"])
-def upload_file():
+@app.route("/api/student_request", methods=["POST"])
+def student_request():
+    print("Incoming request:", request.form)  # Debugging
+
+    # Extract form data
+    student_id = request.form.get("student_id")
+    faculty_id = request.form.get("faculty_id")
+    title = request.form.get("title")
+    description = request.form.get("description")
+
+    if not student_id or not faculty_id or not title or not description:
+        print("Missing required fields")
+        return jsonify({"error": "All fields are required"}), 400
+
+    # Check if a file is uploaded
     if "file" not in request.files:
+        print("No file found in request")
         return jsonify({"error": "No file part"}), 400
 
     file = request.files["file"]
-
     if file.filename == "":
+        print("No file selected")
         return jsonify({"error": "No selected file"}), 400
 
-    file.save(os.path.join(app.config["UPLOAD_FOLDER"], file.filename))
-    print("File uploaded successfully")
-    
-    return jsonify({"message": "File uploaded successfully"}), 200
+    if file and allowed_file(file.filename):
+        # Save file to uploads folder
+        filename = secure_filename(file.filename)
+        file_path = os.path.join("uploads", filename)  # Save path
+        file.save(file_path)
+
+        # Save document details in 'documents' table
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO documents (filename, uploaded_by, status) VALUES (%s, %s, %s)", 
+            (file_path, student_id, "Pending")
+        )
+        db.commit()
+        document_id = cursor.lastrowid  # Get the inserted document ID
+
+        # Create request entry in 'requests' table
+        cursor.execute(
+            "INSERT INTO requests (student_id, faculty_id, document_url, status) VALUES (%s, %s, %s, %s)",
+            (student_id, faculty_id, file_path, "pending")
+        )
+        db.commit()
+        cursor.close()
+
+        print(f"File uploaded successfully: {file_path}")
+        return jsonify({
+            "message": "Request submitted successfully",
+            "document_id": document_id,
+            "file_path": file_path
+        }), 201
+
+    print("Invalid file type")
+    return jsonify({"error": "Invalid file type"}), 400
 
 if __name__ == "__main__":
     app.run(debug=True)

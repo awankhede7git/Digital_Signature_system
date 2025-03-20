@@ -1,56 +1,52 @@
-import React, { useState } from "react";
-import axios from "axios";
+import { useState } from "react";
 
-const UploadFile = () => {
-  const [file, setFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+const FileUpload = () => {
+    const [file, setFile] = useState(null);
+    const [studentId, setStudentId] = useState("");  // Assuming user selects or is logged in
+    const [facultyId, setFacultyId] = useState("");
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+    const handleFileChange = (event) => {
+        setFile(event.target.files[0]);
+    };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
+    const handleUpload = async () => {
+        if (!file || !studentId || !facultyId) {
+            alert("Please select a file and enter student & faculty IDs.");
+            return;
+        }
 
-    if (!file) {
-      alert("Please select a file to upload.");
-      return;
-    }
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("student_id", studentId);
+        formData.append("faculty_id", facultyId);
 
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
+        try {
+            const response = await fetch("http://127.0.0.1:5000/api/upload", {
+                method: "POST",
+                body: formData,  // ✅ Ensures proper format
+            });
 
-      const formData = new FormData();
-      formData.append("file", file);
+            const data = await response.json();
+            console.log(data);
 
-      await axios.post("http://127.0.0.1:5000/api/upload", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
+            if (response.ok) {
+                alert("File uploaded successfully!");
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Upload failed:", error);
+        }
+    };
 
-      alert("File uploaded successfully!");
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      alert("File upload failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="upload-container">
-      <h2>Upload Document</h2>
-      <form onSubmit={handleUpload}>
-        <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" required />
-        <button type="submit" disabled={loading}>
-          {loading ? "Uploading..." : "Upload"}
-        </button>
-      </form>
-    </div>
-  );
+    return (
+        <div>
+            <input type="file" onChange={handleFileChange} />
+            <input type="text" placeholder="Student ID" onChange={(e) => setStudentId(e.target.value)} />
+            <input type="text" placeholder="Faculty ID" onChange={(e) => setFacultyId(e.target.value)} />
+            <button onClick={handleUpload}>Upload</button>
+        </div>
+    );
 };
 
-export default UploadFile;
+export default FileUpload;
