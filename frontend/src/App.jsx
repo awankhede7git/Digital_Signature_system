@@ -3,7 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import StudentRequests from "./pages/StudentRequest";
 import FacultyRequests from "./pages/FacultyRequests";
-import UploadFile from "./pages/UploadFile";
+import FileUpload from "./pages/FileUpload";
 import './App.css';
 
 function App() {
@@ -20,7 +20,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/student-requests" element={<StudentRequests />} />
           <Route path="/faculty-requests" element={<FacultyRequests />} />
-          <Route path="/fileupload" element={<UploadFile />} />
+          <Route path="/fileupload" element={<FileUpload />} />  
           </Routes>
       </div>
     </Router>

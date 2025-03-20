@@ -1,14 +1,9 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const FileUpload = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
+const UploadFile = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  
-  const { facultyId, title, description } = location.state || {};
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -16,7 +11,7 @@ const FileUpload = () => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    
+
     if (!file) {
       alert("Please select a file to upload.");
       return;
@@ -24,22 +19,12 @@ const FileUpload = () => {
 
     setLoading(true);
     try {
-      // Create a request first
       const token = localStorage.getItem("token");
-      const requestRes = await axios.post(
-        "http://127.0.0.1:5000/api/student/request",
-        { faculty_id: facultyId, title, description },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
 
-      const requestId = requestRes.data.request_id;
-
-      // Upload file
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("request_id", requestId);
 
-      await axios.post("http://127.0.0.1:5000/api/student/upload", formData, {
+      await axios.post("http://127.0.0.1:5000/api/upload", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -47,7 +32,6 @@ const FileUpload = () => {
       });
 
       alert("File uploaded successfully!");
-      navigate("/student-requests");
     } catch (error) {
       console.error("Error uploading file:", error);
       alert("File upload failed.");
@@ -69,4 +53,4 @@ const FileUpload = () => {
   );
 };
 
-export default FileUpload;
+export default UploadFile;
