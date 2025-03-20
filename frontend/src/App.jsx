@@ -20,7 +20,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/student-requests" element={<StudentRequests />} />
           <Route path="/faculty-requests" element={<FacultyRequests />} />
-          <Route path="/fileupload" element={<FileUpload />} />  
+          <Route path="/fileupload" element={<FileUpload />} />
           </Routes>
       </div>
     </Router>
