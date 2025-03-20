@@ -1,70 +1,49 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 const FacultyRequests = () => {
-    const [requests, setRequests] = useState([]);
-    const [error, setError] = useState("");
-    const navigate = useNavigate();
+  const [requests, setRequests] = useState([]);
 
-    useEffect(() => {
-        const fetchRequests = async () => {
-            try {
-                const token = localStorage.getItem("token");
-                const res = await axios.get("http://127.0.0.1:5000/api/faculty/requests", {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                setRequests(res.data.requests);
-            } catch (err) {
-                setError("Failed to fetch requests. Please try again.");
-                console.error("Error fetching requests:", err);
-            }
-        };
-        fetchRequests();
-    }, []);
+  useEffect(() => {
+    axios
+      .get("http://127.0.0.1:5000/api/faculty/requests", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+      })
+      .then((response) => {
+        setRequests(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching faculty requests:", error);
+      });
+  }, []);
 
-    const handleApprove = async (requestId) => {
-        try {
-            const token = localStorage.getItem("token");
-            const res = await axios.post(
-                "http://127.0.0.1:5000/api/faculty/approve",
-                { request_id: requestId },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            alert(res.data.message);
-            navigate(`/esign/${requestId}`); // Redirect to eSign page
-        } catch (err) {
-            console.error("Error approving request:", err);
-            alert("Failed to approve request.");
-        }
-    };
-
-    return (
-        <div>
-            <h2>Faculty Requests</h2>
-            {error && <p>{error}</p>}
-            <ul>
-                {requests.length > 0 ? (
-                    requests.map((req) => (
-                        <li key={req.id}>
-                            <p><strong>Student ID:</strong> {req.student_id}</p>
-                            <p><strong>Title:</strong> {req.title}</p>
-                            <p><strong>Description:</strong> {req.description}</p>
-                            <p>
-                                <strong>Document:</strong>{" "}
-                                <a href={req.document_url} target="_blank" rel="noopener noreferrer">
-                                    View
-                                </a>
-                            </p>
-                            <button onClick={() => handleApprove(req.id)}>Approve & eSign</button>
-                        </li>
-                    ))
-                ) : (
-                    <p>No pending requests.</p>
-                )}
-            </ul>
-        </div>
-    );
+  return (
+    <div className="requests-container">
+      <h2>Faculty Requests</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Document</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {requests.map((req) => (
+            <tr key={req.id}>
+              <td>{req.student_email}</td>
+              <td>
+                <a href={`http://127.0.0.1:5000/${req.document_url}`} target="_blank" rel="noopener noreferrer">
+                  View Document
+                </a>
+              </td>
+              <td>{req.status}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
 export default FacultyRequests;
