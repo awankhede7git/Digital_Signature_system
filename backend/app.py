@@ -7,6 +7,7 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_jwt_extended import get_jwt_identity
 from db import db, cursor
+from werkzeug.utils import secure_filename#for uploads
 # from request_routes import request_routes
 
 load_dotenv()
@@ -27,12 +28,29 @@ cursor = db.cursor()
 CORS(app)  # Allow frontend requests
 
 # JWT Configuration
-app.config["JWT_SECRET_KEY"] = "your_secret_key"
+app.config["JWT_SECRET_KEY"] = "50c12acb3131ad7eea2c62e3571c1cc90e78021289d17b60f88681b22c8844cb"
+
 jwt = JWTManager(app)
 
 bcrypt = Bcrypt(app)
 
 # app.register_blueprint(request_routes)
+
+#uploads part
+UPLOAD_FOLDER = "uploads"
+ALLOWED_EXTENSIONS = {"pdf", "doc", "docx", "png", "jpg", "jpeg"}
+
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# Ensure upload directory exists
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+#uploads part
 
 @app.route('/')
 def home():
@@ -97,20 +115,6 @@ def login():
         return jsonify({"success": True, "token": token, "role": role, "redirect_url": redirect_url}), 200
 
     return jsonify({"success": False, "message": "Invalid credentials"}), 401
-
-#upload route
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    file = request.files['file']
-    file.save(f'./uploads/{file.filename}')
-    
-    # Store file details in the database
-    query = "INSERT INTO documents (filename, uploaded_by, status) VALUES (%s, %s, %s)"
-    cursor.execute(query, (file.filename, 1, 'Pending'))  # Example: uploaded_by = 1 (dummy user)
-    db.commit()
-
-    return {"message": "File uploaded successfully!"}
-
 
 # ======================= Faculty Request Routes =======================
 
@@ -187,6 +191,24 @@ def submit_request():
     db.session.commit()
 
     return jsonify({"message": "Request submitted successfully!"}), 201
+
+
+# ======================= Upload file routes - tried by arya =======================
+# Upload document route
+@app.route("/api/upload", methods=["POST"])
+def upload_file():
+    if "file" not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files["file"]
+
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
+
+    file.save(os.path.join(app.config["UPLOAD_FOLDER"], file.filename))
+    print("File uploaded successfully")
+    
+    return jsonify({"message": "File uploaded successfully"}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
