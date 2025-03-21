@@ -93,37 +93,37 @@ def register():
     return jsonify({"success": True, "message": "User registered successfully!", "token": token, "role": role}), 201
 
 # User role based login
-@app.route('/api/login', methods=["POST"])
-def login():
-    data = request.get_json()
-    email = data.get("email")
-    password = data.get("password")
+# @app.route('/api/login', methods=["POST"])
+# def login():
+#     data = request.get_json()
+#     email = data.get("email")
+#     password = data.get("password")
 
-    if not email or not password:
-        return jsonify({"success": False, "message": "Email and password required"}), 400
+#     if not email or not password:
+#         return jsonify({"success": False, "message": "Email and password required"}), 400
 
-    # Fetch user from database
-    cursor = db.cursor()
-    cursor.execute("SELECT id, password_hash, role FROM users WHERE email = %s", (email,))
-    user = cursor.fetchone()
+#     # Fetch user from database
+#     cursor = db.cursor()
+#     cursor.execute("SELECT id, password_hash, role FROM users WHERE email = %s", (email,))
+#     user = cursor.fetchone()
 
-    if user is None:
-        return jsonify({"success": False, "message": "User not found"}), 401
+#     if user is None:
+#         return jsonify({"success": False, "message": "User not found"}), 401
 
-    user_id, stored_hashed_password, role = user  # Unpacking the tuple
+#     user_id, stored_hashed_password, role = user  # Unpacking the tuple
 
-    if bcrypt.check_password_hash(stored_hashed_password, password):
-        token = create_access_token(identity=user_id)
+#     if bcrypt.check_password_hash(stored_hashed_password, password):
+#         token = create_access_token(identity=user_id)
 
-        # Redirect URLs based on role
-        if role == "faculty":
-            redirect_url = "http://127.0.0.1:5000/api/faculty/requests/<int:faculty_id>"
-        else:
-            redirect_url = "http://127.0.0.1:5000/api/submit_request"
+#         # Redirect URLs based on role
+#         if role == "faculty":
+#             redirect_url = "http://127.0.0.1:5000/api/faculty/requests/{user_id}"
+#         else:
+#             redirect_url = "http://127.0.0.1:5000/api/student/dashboard/{user_id}"
 
-        return jsonify({"success": True, "token": token, "role": role, "user_id": user_id, "redirect_url": redirect_url}), 200
+#         return jsonify({"success": True, "token": token, "role": role, "user_id": user_id, "redirect_url": redirect_url}), 200
 
-    return jsonify({"success": False, "message": "Invalid credentials"}), 401
+#     return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
 #-----------------------------------------register-login routes end--------------------------
 
@@ -186,28 +186,104 @@ def get_faculties():
 
 #-----------------------------------------student-requests routes--------------------------------------
 #login redirects here
-@app.route("/api/student/request", methods=["POST"])
-@jwt_required()
-def submit_request():
-    data = request.get_json()
-    student_id = get_jwt_identity()
-    faculty_id = data.get("faculty_id")
-    title = data.get("title")
-    description = data.get("description")
+# @app.route("/api/student/dashboard/<int:student_id>", methods=["GET", "POST"])
+# @jwt_required()
+# def student_dashboard(student_id):
+#     logged_in_student = get_jwt_identity()
 
-    if not faculty_id or not title or not description:
-        return jsonify({"message": "All fields are required"}), 400
+#     # Ensure students can only view their own requests
+#     if logged_in_student != student_id:
+#         return jsonify({"message": "Unauthorized access"}), 403
 
-    new_request = Request(
-        student_id=student_id,
-        faculty_id=faculty_id,
-        document_url="",
-        status="pending"
-    )
-    db.session.add(new_request)
-    db.session.commit()
+#     if request.method == "POST":
+#         data = request.get_json()
+#         faculty_id = data.get("faculty_id")
+#         title = data.get("title")
+#         description = data.get("description")
 
-    return jsonify({"message": "Request submitted successfully!"}), 201
+#         if not faculty_id or not title or not description:
+#             return jsonify({"message": "All fields are required"}), 400
+
+#         new_request = Request(
+#             student_id=student_id,
+#             faculty_id=faculty_id,
+#             document_url="",
+#             status="pending"
+#         )
+#         db.session.add(new_request)
+#         db.session.commit()
+
+#         return jsonify({"message": "Request submitted successfully!"}), 201
+
+#     # Fetch student requests
+#     cursor = db.cursor(dictionary=True)
+#     query = """
+#         SELECT r.id, u.email AS faculty_email, r.document_url, r.status, r.created_at
+#         FROM requests r
+#         JOIN users u ON r.faculty_id = u.id
+#         WHERE r.student_id = %s
+#     """
+#     cursor.execute(query, (student_id,))
+#     requests = cursor.fetchall()
+
+#     # If no requests found, return empty list
+#     if not requests:
+#         return jsonify({"message": "No requests found for this student."}), 404
+
+#     return jsonify(requests), 200
+#//////////////////////////////////WORK ON THE NICHE WALA Student-dashboard////////////////////////////////////
+
+# @app.route("/api/student/dashboard/<int:student_id>", methods=["GET", "POST"])
+# @jwt_required()
+# def student_dashboard(student_id):
+#     logged_in_student = get_jwt_identity()
+
+#     # Ensure students can only access their own data
+#     if int(logged_in_student) != student_id:
+#         return jsonify({"message": "Unauthorized access"}), 403
+
+#     if request.method == "POST":
+#         data = request.get_json()
+#         faculty_id = data.get("faculty_id")
+#         title = data.get("title")
+#         description = data.get("description")
+
+#         if not faculty_id or not title or not description:
+#             return jsonify({"message": "All fields are required"}), 400
+
+#         new_request = Request(
+#             student_id=student_id,
+#             faculty_id=faculty_id,
+#             document_url="",  
+#             status="pending"
+#         )
+#         db.session.add(new_request)
+#         db.session.commit()
+
+#         return jsonify({"message": "Request submitted successfully!"}), 201
+
+#     # Fetch student requests
+#     requests = db.session.execute("""
+#         SELECT r.id, u.email AS faculty_email, r.document_url, r.status, r.created_at
+#         FROM requests r
+#         JOIN users u ON r.faculty_id = u.id
+#         WHERE r.student_id = :student_id
+#     """, {"student_id": student_id}).fetchall()
+
+#     # Convert result into list of dictionaries
+#     request_list = [
+#         {
+#             "id": req.id,
+#             "faculty_email": req.faculty_email,
+#             "document_url": req.document_url,
+#             "status": req.status,
+#             "created_at": req.created_at
+#         }
+#         for req in requests
+#     ]
+
+#     return jsonify(request_list), 200
+
 
 
 # Upload document route - this is our main student requests page cha route
