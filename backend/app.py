@@ -8,9 +8,16 @@ from flask_jwt_extended import create_access_token, jwt_required, JWTManager
 from flask_jwt_extended import get_jwt_identity
 from db import db, cursor
 from werkzeug.utils import secure_filename#for uploads
+import docusign_esign as docusign
+from docusign_esign import ApiClient, EnvelopesApi, EnvelopeDefinition, Document, Signer, SignHere, Tabs, Recipients
+import base64 #docusign
 # from request_routes import request_routes
 
 load_dotenv()
+DOCUSIGN_CLIENT_ID = os.getenv("DOCUSIGN_CLIENT_ID")
+DOCUSIGN_CLIENT_SECRET = os.getenv("DOCUSIGN_CLIENT_SECRET")
+DOCUSIGN_USER_ID = os.getenv("DOCUSIGN_USER_ID")
+DOCUSIGN_BASE_PATH = os.getenv("DOCUSIGN_BASE_PATH")
 
 app = Flask(__name__)
 DB_HOST = os.getenv('DB_HOST')
@@ -255,6 +262,88 @@ def student_request():
 
     print("Invalid file type")
     return jsonify({"error": "Invalid file type"}), 400
+
+
+
+
+
+# ----------------------------
+@app.route("/api/faculty/esign", methods=["POST"])
+@jwt_required()
+def faculty_esign():
+    faculty_id = get_jwt_identity()
+    data = request.get_json()
+    request_id = data.get("request_id")
+
+    if not request_id:
+        return jsonify({"message": "Request ID is required"}), 400
+
+    cursor.execute("SELECT document_url FROM requests WHERE id = %s AND faculty_id = %s", (request_id, faculty_id))
+    document = cursor.fetchone()
+
+    if not document:
+        return jsonify({"message": "Document not found"}), 404
+
+    document_path = f"uploads/{document[0]}"
+    
+    # Read document for signing
+    with open(document_path, "rb") as file:
+        document_bytes = file.read()
+    base64_doc = base64.b64encode(document_bytes).decode("utf-8")
+
+    # Configure DocuSign API
+    api_client = ApiClient()
+    api_client.host = "https://demo.docusign.net/restapi"
+
+    # Set up DocuSign authentication
+    access_token = "YOUR_DOCUSIGN_ACCESS_TOKEN"
+    account_id = "YOUR_DOCUSIGN_ACCOUNT_ID"
+
+    api_client.set_default_header("Authorization", f"Bearer {access_token}")
+
+    # Create Envelope
+    envelope_api = EnvelopesApi(api_client)
+    envelope_definition = EnvelopeDefinition(
+        email_subject="Please sign the document",
+        documents=[Document(
+            document_base64=base64_doc,
+            name="Requested Document",
+            file_extension="pdf",
+            document_id="1"
+        )],
+        recipients={"signers": [
+            Signer(
+                email="faculty@example.com",  # Get faculty email dynamically
+                name="Faculty Name",
+                recipient_id="1",
+                tabs=Tabs(sign_here_tabs=[SignHere(anchor_string="Sign Here", anchor_units="pixels", anchor_x_offset="10", anchor_y_offset="20")])
+            )
+        ]},
+        status="sent"
+    )
+
+    results = envelope_api.create_envelope(account_id, envelope_definition)
+    envelope_id = results.envelope_id
+
+    return jsonify({"message": "Signature request sent!", "envelope_id": envelope_id}), 200
+
+@app.route("/api/faculty/submit_signed", methods=["POST"])
+@jwt_required()
+def submit_signed_document():
+    faculty_id = get_jwt_identity()
+    data = request.get_json()
+    request_id = data.get("request_id")
+    signed_document_url = data.get("signed_document_url")
+
+    if not request_id or not signed_document_url:
+        return jsonify({"message": "Request ID and signed document URL are required"}), 400
+
+    cursor.execute("UPDATE requests SET status = 'signed' WHERE id = %s AND faculty_id = %s", (request_id, faculty_id))
+    cursor.execute("UPDATE documents SET status = 'Signed', signed_by = %s WHERE id = %s", (faculty_id, request_id))
+    db.connection.commit()
+
+    return jsonify({"message": "Signed document submitted successfully!"}), 200
+
 
 if __name__ == "__main__":
     app.run(debug=True)

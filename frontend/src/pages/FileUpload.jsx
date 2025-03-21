@@ -4,7 +4,7 @@ const FileUpload = () => {
     const [file, setFile] = useState(null);
     const [studentId, setStudentId] = useState("");  // Assuming user selects or is logged in
     const [facultyId, setFacultyId] = useState("");
-
+    
     const handleFileChange = (event) => {
         setFile(event.target.files[0]);
     };
