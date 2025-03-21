@@ -28,7 +28,7 @@ function Login() {
       if (data.role === "faculty") {
         navigate("/faculty-requests"); // Redirect to FacultyRequests.jsx
       } else {
-        navigate("/student-requests"); // Redirect to StudentRequests.jsx
+        navigate("/student-dashboard"); // Redirect to StudentRequests.jsx
       }
     } else {
       setMessage(data.message);

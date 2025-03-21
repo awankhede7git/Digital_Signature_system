@@ -204,6 +204,27 @@ def submit_request():
 
     return jsonify({"message": "Request submitted successfully!"}), 201
 
+#for fetching existing student requests-
+@app.route("/api/student_requests", methods=["GET"])
+@jwt_required()
+def get_student_requests():
+    student_id = get_jwt_identity()  # Get logged-in student ID from JWT
+
+    try:
+        cursor = db.cursor(dictionary=True)
+        cursor.execute(
+            "SELECT id, faculty_id, document_url, status, created_at FROM requests WHERE student_id = %s ORDER BY created_at DESC",
+            (student_id,),
+        )
+        requests = cursor.fetchall()
+        cursor.close()
+
+        return jsonify(requests), 200
+    except Exception as e:
+        print("Error fetching student requests:", str(e))
+        return jsonify({"error": "Failed to load requests. Please try again."}), 500
+
+
 
 # Upload document route
 @app.route("/api/student_request", methods=["POST"])
