@@ -28,7 +28,9 @@ db = mysql.connector.connect(
     database=DB_NAME
 )
 cursor = db.cursor()
-CORS(app)  # Allow frontend requests
+CORS(app, origins=["http://localhost:5173"])
+
+# CORS(app)  # Allow frontend requests
 
 # JWT Configuration
 app.config["JWT_SECRET_KEY"] = "50c12acb3131ad7eea2c62e3571c1cc90e78021289d17b60f88681b22c8844cb"
@@ -37,7 +39,7 @@ jwt = JWTManager(app)
 
 bcrypt = Bcrypt(app)
 
-esign_bp = Blueprint("esign", __name__)
+faculty_bp = Blueprint("esign", __name__)
 
 # -------------------------------------uploads part------------------------------------
 UPLOAD_FOLDER = "uploads"
@@ -93,37 +95,37 @@ def register():
     return jsonify({"success": True, "message": "User registered successfully!", "token": token, "role": role}), 201
 
 # User role based login
-# @app.route('/api/login', methods=["POST"])
-# def login():
-#     data = request.get_json()
-#     email = data.get("email")
-#     password = data.get("password")
+@app.route('/api/login', methods=["POST"])
+def login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
 
-#     if not email or not password:
-#         return jsonify({"success": False, "message": "Email and password required"}), 400
+    if not email or not password:
+        return jsonify({"success": False, "message": "Email and password required"}), 400
 
-#     # Fetch user from database
-#     cursor = db.cursor()
-#     cursor.execute("SELECT id, password_hash, role FROM users WHERE email = %s", (email,))
-#     user = cursor.fetchone()
+    # Fetch user from database
+    cursor = db.cursor()
+    cursor.execute("SELECT id, password_hash, role FROM users WHERE email = %s", (email,))
+    user = cursor.fetchone()
 
-#     if user is None:
-#         return jsonify({"success": False, "message": "User not found"}), 401
+    if user is None:
+        return jsonify({"success": False, "message": "User not found"}), 401
 
-#     user_id, stored_hashed_password, role = user  # Unpacking the tuple
+    user_id, stored_hashed_password, role = user  # Unpacking the tuple
 
-#     if bcrypt.check_password_hash(stored_hashed_password, password):
-#         token = create_access_token(identity=user_id)
+    if bcrypt.check_password_hash(stored_hashed_password, password):
+        token = create_access_token(identity=user_id)
 
-#         # Redirect URLs based on role
-#         if role == "faculty":
-#             redirect_url = "http://127.0.0.1:5000/api/faculty/requests/{user_id}"
-#         else:
-#             redirect_url = "http://127.0.0.1:5000/api/student/dashboard/{user_id}"
+        # Redirect URLs based on role
+        if role == "faculty":
+            redirect_url = "http://127.0.0.1:5000/api/faculty/requests/{user_id}"
+        else:
+            redirect_url = "http://127.0.0.1:5000/api/student/dashboard/{user_id}"
 
-#         return jsonify({"success": True, "token": token, "role": role, "user_id": user_id, "redirect_url": redirect_url}), 200
+        return jsonify({"success": True, "token": token, "role": role, "user_id": user_id, "redirect_url": redirect_url}), 200
 
-#     return jsonify({"success": False, "message": "Invalid credentials"}), 401
+    return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
 #-----------------------------------------register-login routes end--------------------------
 
@@ -185,104 +187,31 @@ def get_faculties():
 #-----------------------------------------faculty-requests end--------------------------------------
 
 #-----------------------------------------student-requests routes--------------------------------------
-#login redirects here
-# @app.route("/api/student/dashboard/<int:student_id>", methods=["GET", "POST"])
-# @jwt_required()
-# def student_dashboard(student_id):
-#     logged_in_student = get_jwt_identity()
+#student login redirects here
+@app.route("/api/student/dashboard/<int:student_id>", methods=["GET"])
+@jwt_required()
+def student_dashboard(student_id):
+    logged_in_student = get_jwt_identity()
 
-#     # Ensure students can only view their own requests
-#     if logged_in_student != student_id:
-#         return jsonify({"message": "Unauthorized access"}), 403
+    # Ensure students can only access their own data
+    if int(logged_in_student) != student_id:
+        return jsonify({"message": "Unauthorized access"}), 403
 
-#     if request.method == "POST":
-#         data = request.get_json()
-#         faculty_id = data.get("faculty_id")
-#         title = data.get("title")
-#         description = data.get("description")
+    # Fetch student requests
+    cursor = db.connection.cursor(dictionary=True)
+    cursor.execute(
+        """
+        SELECT r.id, u.email AS faculty_email, r.document_url, r.status, r.created_at
+        FROM requests r
+        JOIN users u ON r.faculty_id = u.id
+        WHERE r.student_id = %s
+        """,
+        (student_id,),
+    )
+    requests = cursor.fetchall()
+    cursor.close()
 
-#         if not faculty_id or not title or not description:
-#             return jsonify({"message": "All fields are required"}), 400
-
-#         new_request = Request(
-#             student_id=student_id,
-#             faculty_id=faculty_id,
-#             document_url="",
-#             status="pending"
-#         )
-#         db.session.add(new_request)
-#         db.session.commit()
-
-#         return jsonify({"message": "Request submitted successfully!"}), 201
-
-#     # Fetch student requests
-#     cursor = db.cursor(dictionary=True)
-#     query = """
-#         SELECT r.id, u.email AS faculty_email, r.document_url, r.status, r.created_at
-#         FROM requests r
-#         JOIN users u ON r.faculty_id = u.id
-#         WHERE r.student_id = %s
-#     """
-#     cursor.execute(query, (student_id,))
-#     requests = cursor.fetchall()
-
-#     # If no requests found, return empty list
-#     if not requests:
-#         return jsonify({"message": "No requests found for this student."}), 404
-
-#     return jsonify(requests), 200
-#//////////////////////////////////WORK ON THE NICHE WALA Student-dashboard////////////////////////////////////
-
-# @app.route("/api/student/dashboard/<int:student_id>", methods=["GET", "POST"])
-# @jwt_required()
-# def student_dashboard(student_id):
-#     logged_in_student = get_jwt_identity()
-
-#     # Ensure students can only access their own data
-#     if int(logged_in_student) != student_id:
-#         return jsonify({"message": "Unauthorized access"}), 403
-
-#     if request.method == "POST":
-#         data = request.get_json()
-#         faculty_id = data.get("faculty_id")
-#         title = data.get("title")
-#         description = data.get("description")
-
-#         if not faculty_id or not title or not description:
-#             return jsonify({"message": "All fields are required"}), 400
-
-#         new_request = Request(
-#             student_id=student_id,
-#             faculty_id=faculty_id,
-#             document_url="",  
-#             status="pending"
-#         )
-#         db.session.add(new_request)
-#         db.session.commit()
-
-#         return jsonify({"message": "Request submitted successfully!"}), 201
-
-#     # Fetch student requests
-#     requests = db.session.execute("""
-#         SELECT r.id, u.email AS faculty_email, r.document_url, r.status, r.created_at
-#         FROM requests r
-#         JOIN users u ON r.faculty_id = u.id
-#         WHERE r.student_id = :student_id
-#     """, {"student_id": student_id}).fetchall()
-
-#     # Convert result into list of dictionaries
-#     request_list = [
-#         {
-#             "id": req.id,
-#             "faculty_email": req.faculty_email,
-#             "document_url": req.document_url,
-#             "status": req.status,
-#             "created_at": req.created_at
-#         }
-#         for req in requests
-#     ]
-
-#     return jsonify(request_list), 200
+    return jsonify(requests), 200
 
 
 
@@ -347,108 +276,6 @@ def student_request():
 #-----------------------------------------student-requests routes ends--------------------------------------
 
 #---------------------------------------esign----------------------------------------
-# Configure DocuSign API
-def get_docusign_client():
-    api_client = ApiClient()
-    api_client.host = os.getenv("DOCUSIGN_BASE_URL")
-    api_client.set_base_path("/v2.1/accounts/" + os.getenv("DOCUSIGN_ACCOUNT_ID"))
-    api_client.set_oauth_token("YOUR_OAUTH_ACCESS_TOKEN")
-    return api_client
-
-@esign_bp.route("/api/send-signature-request", methods=["POST"])
-def send_signature_request():
-    data = request.json
-    faculty_id = data.get("faculty_id")
-    document_url = data.get("document_url")
-
-    if not faculty_id or not document_url:
-        return jsonify({"error": "Faculty ID and Document URL are required"}), 400
-
-    # Read file
-    with open(document_url, "rb") as file:
-        file_base64 = base64.b64encode(file.read()).decode("utf-8")
-
-    # Prepare document for signing
-    doc = Document(
-        document_base64=file_base64,
-        name="Student Request",
-        file_extension="pdf",
-        document_id="1"
-    )
-
-    # Define recipient (Faculty)
-    signer = Signer(
-        email="faculty@example.com",  # Fetch dynamically from DB
-        name="Faculty Name",  # Fetch dynamically
-        recipient_id="1",
-        routing_order="1",
-        tabs=Tabs(sign_here_tabs=[SignHere(document_id="1", page_number="1", x_position="200", y_position="500")])
-    )
-
-    # Create envelope
-    envelope_definition = EnvelopeDefinition(
-        email_subject="Please sign the document",
-        documents=[doc],
-        recipients=Recipients(signers=[signer]),
-        status="sent"
-    )
-
-    # Send envelope
-    api_client = get_docusign_client()
-    envelopes_api = EnvelopesApi(api_client)
-    results = envelopes_api.create_envelope(os.getenv("DOCUSIGN_ACCOUNT_ID"), envelope_definition)
-
-    return jsonify({"message": "Signature request sent", "envelope_id": results.envelope_id}), 200
-
-
-@esign_bp.route("/api/check-signature-status/<envelope_id>", methods=["GET"])
-def check_signature_status(envelope_id):
-    try:
-        api_client = get_docusign_client()
-        envelopes_api = EnvelopesApi(api_client)
-        envelope = envelopes_api.get_envelope(os.getenv("DOCUSIGN_ACCOUNT_ID"), envelope_id)
-
-        if envelope.status == "completed":
-            # Update request status in database
-            cursor = db.cursor()
-            cursor.execute("UPDATE requests SET status=%s WHERE envelope_id=%s", ("signed", envelope_id))
-            db.commit()
-            cursor.close()
-
-            return jsonify({"message": "Document signed successfully"}), 200
-
-        return jsonify({"message": "Document not yet signed"}), 202
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@esign_bp.route("/api/faculty/esign", methods=["POST"])
-def faculty_esign():
-    data = request.json
-    request_id = data.get("request_id")
-
-    # Fetch document details from DB
-    cursor = db.cursor(dictionary=True)
-    cursor.execute("SELECT document_url FROM requests WHERE id = %s", (request_id,))
-    request = cursor.fetchone()
-
-    if not request:
-        return jsonify({"error": "Request not found"}), 404
-
-    document_url = request["document_url"]
-
-    # Send document to DocuSign API
-    envelope_id = send_document_for_signing(document_url)  # Call DocuSign API here
-
-    if not envelope_id:
-        return jsonify({"error": "Failed to send document for signing"}), 500
-
-    # Update requests table with envelope_id
-    cursor.execute("UPDATE requests SET envelope_id = %s WHERE id = %s", (envelope_id, request_id))
-    db.commit()
-    cursor.close()
-
-    return jsonify({"message": "Document sent for signing", "envelope_id": envelope_id}), 200
 
 #---------------------------------------esign ends----------------------------------------
 
