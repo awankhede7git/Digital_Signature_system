@@ -138,7 +138,7 @@ def get_faculty_requests(faculty_id):
 
     # Fetch requests for the given faculty_id
     query = """
-        SELECT r.id, u.email AS student_email, r.document_url, r.status, r.envelope_id
+        SELECT r.id, u.email AS student_email, r.document_url, r.created_at, r.status, r.envelope_id
         FROM requests r
         JOIN users u ON r.student_id = u.id
         WHERE r.faculty_id = %s
@@ -152,6 +152,7 @@ def get_faculty_requests(faculty_id):
         return jsonify({"message": "No requests found for this faculty."}), 404
 
     return jsonify(requests), 200
+
 
 
 # Approve request (Redirects to eSign page)
