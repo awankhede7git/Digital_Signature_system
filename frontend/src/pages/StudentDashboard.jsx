@@ -34,7 +34,7 @@ const StudentDashboard = () => {
   return (
     <div className="requests-container">
       <h2>Student Dashboard</h2>
-      <button onClick={() => navigate("/student-requests")}>Submit New Request</button>
+      <button onClick={() => navigate(`/student-requests/${studentId}`)}>Submit New Request</button>
 
       {error && <p className="error-message">{error}</p>}
 

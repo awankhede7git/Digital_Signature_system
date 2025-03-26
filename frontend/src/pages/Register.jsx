@@ -23,9 +23,9 @@ function Register() {
     if (data.success) {
       // Redirect based on role after successful registration
       if (role === "faculty") {
-        navigate("/faculty-requests");
+        navigate("/login");
       } else {
-        navigate("/student-requests");
+        navigate("/login");
       }
     }
   };

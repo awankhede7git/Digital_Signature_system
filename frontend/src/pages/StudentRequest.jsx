@@ -11,6 +11,10 @@ const StudentRequests = () => {
   const [file, setFile] = useState(null);
   const navigate = useNavigate();
 
+  // Retrieve student ID from local storage or authentication context
+  const studentId = localStorage.getItem("student_id"); // Ensure this is correctly set when a student logs in
+
+
   useEffect(() => {
     axios.get("http://127.0.0.1:5000/api/faculties")
       .then(response => {
@@ -25,6 +29,32 @@ const StudentRequests = () => {
     setFile(e.target.files[0]);
   };
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   if (!facultyId || !title || !description || !file) {
+  //     alert("All fields and a file are required!");
+  //     return;
+  //   }
+
+  //   const formData = new FormData();
+  //   formData.append("student_id", studentId);  
+  //   formData.append("faculty_id", facultyId);
+  //   formData.append("title", title);
+  //   formData.append("description", description);
+  //   formData.append("file", file);
+
+  //   try {
+  //     const response = await axios.post(`http://127.0.0.1:5000/api/student_request/${studentId}`, formData, {
+  //       headers: { "Content-Type": "multipart/form-data" }
+  //     });
+  //     alert(response.data.message);
+  //     navigate("/student-dashboard");  // Redirect after submission
+  //   } catch (error) {
+  //     console.error("Error submitting request:", error);
+  //     alert("File upload failed.");
+  //   }
+  // };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!facultyId || !title || !description || !file) {
@@ -33,16 +63,18 @@ const StudentRequests = () => {
     }
 
     const formData = new FormData();
-    formData.append("student_id", 1);  // TODO: Replace with actual logged-in student ID
+    formData.append("student_id", studentId);  
     formData.append("faculty_id", facultyId);
     formData.append("title", title);
     formData.append("description", description);
     formData.append("file", file);
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/api/student_request", formData, {
-        headers: { "Content-Type": "multipart/form-data" }
-      });
+      const response = await axios.post(
+        `http://127.0.0.1:5000/api/student_request/${studentId}`,  // Send student ID dynamically
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
       alert(response.data.message);
       navigate("/student-dashboard");  // Redirect after submission
     } catch (error) {
@@ -50,6 +82,7 @@ const StudentRequests = () => {
       alert("File upload failed.");
     }
   };
+
 
   return (
     <div className="request-container">
