@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import mysql.connector
 from dotenv import load_dotenv
 import os
@@ -47,6 +47,7 @@ ALLOWED_EXTENSIONS = {"pdf", "doc", "docx", "png", "jpg", "jpeg"}
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
+
 # Ensure upload directory exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -54,6 +55,9 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
+#faculty uploads folder
+FACUPLOAD_FOLDER = os.path.join(os.getcwd(), "facUpload")
 
 #-----------------------------------------uploads part over----------------------------------
 
@@ -104,28 +108,66 @@ def login():
     if not email or not password:
         return jsonify({"success": False, "message": "Email and password required"}), 400
 
-    # Fetch user from database
     cursor = db.cursor()
-    cursor.execute("SELECT id, password_hash, role FROM users WHERE email = %s", (email,))
-    user = cursor.fetchone()
+    
+    try:
+        # Fetch user from the database
+        cursor.execute("SELECT id, password_hash, role FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+        
+        if user is None:
+            return jsonify({"success": False, "message": "User not found"}), 401
 
-    if user is None:
-        return jsonify({"success": False, "message": "User not found"}), 401
+        user_id, stored_hashed_password, role = user  # Unpacking the tuple
 
-    user_id, stored_hashed_password, role = user  # Unpacking the tuple
+        # Verify password
+        if bcrypt.check_password_hash(stored_hashed_password, password):
+            token = create_access_token(identity=user_id)
 
-    if bcrypt.check_password_hash(stored_hashed_password, password):
-        token = create_access_token(identity=user_id)
+            # Redirect URLs based on role
+            if role == "faculty":
+                redirect_url = f"http://127.0.0.1:5000/api/faculty/requests/{user_id}"
+            else:
+                redirect_url = f"http://127.0.0.1:5000/api/student/dashboard/{user_id}"
 
-        # Redirect URLs based on role
-        if role == "faculty":
-            redirect_url = "http://127.0.0.1:5000/api/faculty/requests/{user_id}"
-        else:
-            redirect_url = "http://127.0.0.1:5000/api/student/dashboard/{user_id}"
+            return jsonify({"success": True, "token": token, "role": role, "user_id": user_id, "redirect_url": redirect_url}), 200
 
-        return jsonify({"success": True, "token": token, "role": role, "user_id": user_id, "redirect_url": redirect_url}), 200
+        return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
-    return jsonify({"success": False, "message": "Invalid credentials"}), 401
+    finally:
+        cursor.close()  # Ensure the cursor is closed properly
+
+# @app.route('/api/login', methods=["POST"])
+# def login():
+#     data = request.get_json()
+#     email = data.get("email")
+#     password = data.get("password")
+
+#     if not email or not password:
+#         return jsonify({"success": False, "message": "Email and password required"}), 400
+
+#     # Fetch user from database
+#     cursor = db.cursor()
+#     cursor.execute("SELECT id, password_hash, role FROM users WHERE email = %s", (email,))
+#     user = cursor.fetchone()
+
+#     if user is None:
+#         return jsonify({"success": False, "message": "User not found"}), 401
+
+#     user_id, stored_hashed_password, role = user  # Unpacking the tuple
+
+#     if bcrypt.check_password_hash(stored_hashed_password, password):
+#         token = create_access_token(identity=user_id)
+
+#         # Redirect URLs based on role
+#         if role == "faculty":
+#             redirect_url = "http://127.0.0.1:5000/api/faculty/requests/{user_id}"
+#         else:
+#             redirect_url = "http://127.0.0.1:5000/api/student/dashboard/{user_id}"
+
+#         return jsonify({"success": True, "token": token, "role": role, "user_id": user_id, "redirect_url": redirect_url}), 200
+
+#     return jsonify({"success": False, "message": "Invalid credentials"}), 401
 
 #-----------------------------------------register-login routes end--------------------------
 
@@ -153,7 +195,24 @@ def get_faculty_requests(faculty_id):
 
     return jsonify(requests), 200
 
+@app.route('/view-document/<filename>', methods=['GET'])
+def view_document(filename):
+    """Serve document for preview in a new tab."""
+    return send_from_directory(UPLOAD_FOLDER, filename)
+@app.route('/download-document/<filename>', methods=['GET'])
+def download_document(filename):
+    """Serve document and save it to facUpload."""
+    source_path = os.path.join(UPLOAD_FOLDER, filename)
+    dest_path = os.path.join(FACUPLOAD_FOLDER, filename)
 
+    if not os.path.exists(FACUPLOAD_FOLDER):
+        os.makedirs(FACUPLOAD_FOLDER)
+
+    # Copy file to facUpload
+    import shutil
+    shutil.copy(source_path, dest_path)
+    
+    return send_from_directory(FACUPLOAD_FOLDER, filename, as_attachment=True)
 
 # Approve request (Redirects to eSign page)
 @app.route("/api/faculty/approve", methods=["POST"])
@@ -185,34 +244,47 @@ def get_faculties():
     cursor.close()
     return jsonify(faculties)
 
+@app.route("/api/update-request-status/<int:request_id>", methods=["PATCH"])
+def update_request_status(request_id):
+    data = request.get_json()
+    new_status = data.get("status")
+
+    if new_status not in ["pending", "approved", "rejected"]:
+        return jsonify({"error": "Invalid status"}), 400
+
+    cursor = db.cursor()
+    cursor.execute("UPDATE requests SET status = %s WHERE id = %s", (new_status, request_id))
+    db.commit()
+    cursor.close()
+
+    return jsonify({"message": "Status updated successfully"}), 200
+
+
 #-----------------------------------------faculty-requests end--------------------------------------
 
 #-----------------------------------------student-requests routes--------------------------------------
 #student login redirects here
 @app.route("/api/student/dashboard/<int:student_id>", methods=["GET"])
-@jwt_required()
 def student_dashboard(student_id):
-    logged_in_student = get_jwt_identity()
+    cursor = db.cursor(dictionary=True)
 
-    # Ensure students can only access their own data
-    if int(logged_in_student) != student_id:
-        return jsonify({"message": "Unauthorized access"}), 403
-
-    # Fetch student requests
-    cursor = db.connection.cursor(dictionary=True)
-    cursor.execute(
-        """
+    query = """
         SELECT r.id, u.email AS faculty_email, r.document_url, r.status, r.created_at
         FROM requests r
         JOIN users u ON r.faculty_id = u.id
         WHERE r.student_id = %s
-        """,
-        (student_id,),
-    )
-    requests = cursor.fetchall()
-    cursor.close()
+    """
+    cursor.execute(query, (student_id,))
 
-    return jsonify(requests), 200
+    requests = cursor.fetchall()
+
+    # if not requests:
+    #     return jsonify({"message": "No requests found for this student."}), 404
+    return jsonify(requests), 200  # Even if empty, return 200 with an empty list
+
+
+
+    # return jsonify(requests), 200
 
 
 
