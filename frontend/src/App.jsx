@@ -3,7 +3,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import StudentRequests from "./pages/StudentRequest";
 import FacultyRequests from "./pages/FacultyRequests";
-import FileUpload from "./pages/FileUpload";
 import StudentDashboard from "./pages/StudentDashboard";
 import "./App.css";
 
@@ -35,7 +34,6 @@ function MainContent() {
         <Route path="/login" element={<Login />} />
         <Route path="/student-requests/:studentId" element={<StudentRequests />} />
         <Route path="/faculty-requests" element={<FacultyRequests />} />
-        <Route path="/fileupload" element={<FileUpload />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
       </Routes>
     </div>
