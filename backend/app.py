@@ -137,38 +137,6 @@ def login():
     finally:
         cursor.close()  # Ensure the cursor is closed properly
 
-# @app.route('/api/login', methods=["POST"])
-# def login():
-#     data = request.get_json()
-#     email = data.get("email")
-#     password = data.get("password")
-
-#     if not email or not password:
-#         return jsonify({"success": False, "message": "Email and password required"}), 400
-
-#     # Fetch user from database
-#     cursor = db.cursor()
-#     cursor.execute("SELECT id, password_hash, role FROM users WHERE email = %s", (email,))
-#     user = cursor.fetchone()
-
-#     if user is None:
-#         return jsonify({"success": False, "message": "User not found"}), 401
-
-#     user_id, stored_hashed_password, role = user  # Unpacking the tuple
-
-#     if bcrypt.check_password_hash(stored_hashed_password, password):
-#         token = create_access_token(identity=user_id)
-
-#         # Redirect URLs based on role
-#         if role == "faculty":
-#             redirect_url = "http://127.0.0.1:5000/api/faculty/requests/{user_id}"
-#         else:
-#             redirect_url = "http://127.0.0.1:5000/api/student/dashboard/{user_id}"
-
-#         return jsonify({"success": True, "token": token, "role": role, "user_id": user_id, "redirect_url": redirect_url}), 200
-
-#     return jsonify({"success": False, "message": "Invalid credentials"}), 401
-
 #-----------------------------------------register-login routes end--------------------------
 
 #-----------------------------------------faculty-requests--------------------------------------
@@ -199,6 +167,7 @@ def get_faculty_requests(faculty_id):
 def view_document(filename):
     """Serve document for preview in a new tab."""
     return send_from_directory(UPLOAD_FOLDER, filename)
+
 @app.route('/download-document/<filename>', methods=['GET'])
 def download_document(filename):
     """Serve document and save it to facUpload."""
@@ -213,27 +182,6 @@ def download_document(filename):
     shutil.copy(source_path, dest_path)
     
     return send_from_directory(FACUPLOAD_FOLDER, filename, as_attachment=True)
-
-# Approve request (Redirects to eSign page)
-@app.route("/api/faculty/approve", methods=["POST"])
-@jwt_required()
-def approve_request():
-    faculty_id = get_jwt_identity()
-    data = request.get_json()
-    request_id = data.get("request_id")
-
-    if not request_id:
-        return jsonify({"message": "Request ID is required"}), 400
-
-    cursor = db.connection.cursor()
-    cursor.execute("UPDATE requests SET status = 'approved' WHERE id = %s AND faculty_id = %s", (request_id, faculty_id))
-    db.connection.commit()
-    cursor.close()
-
-    return jsonify({"message": "Request approved successfully!", "redirect_url": f"/esign/{request_id}"}), 200
-
-
-    return jsonify({"success": True, "message": f"Request {action} successfully"})
 
 
 @app.route('/api/faculties', methods=['GET'])
@@ -278,17 +226,9 @@ def student_dashboard(student_id):
 
     requests = cursor.fetchall()
 
-    # if not requests:
-    #     return jsonify({"message": "No requests found for this student."}), 404
     return jsonify(requests), 200  # Even if empty, return 200 with an empty list
 
-
-
-    # return jsonify(requests), 200
-
-
-
-# Upload document route - this is our main student requests page cha route
+# Upload document route - this is our main student requests page route
 @app.route("/api/student_request", methods=["POST"])
 def student_request():
     print("Incoming request:", request.form)  # Debugging
@@ -347,11 +287,6 @@ def student_request():
     return jsonify({"error": "Invalid file type"}), 400
 
 #-----------------------------------------student-requests routes ends--------------------------------------
-
-#---------------------------------------esign----------------------------------------
-
-#---------------------------------------esign ends----------------------------------------
-
 
 if __name__ == "__main__":
     app.run(debug=True)
