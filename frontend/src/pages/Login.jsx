@@ -32,6 +32,7 @@ function Login() {
         localStorage.setItem("faculty_id", data.user_id); // Store faculty ID for requests
         navigate("/faculty-requests"); // Redirect to FacultyRequests.jsx
       } else {
+        localStorage.setItem("student_id", data.user_id);
         navigate("/student-dashboard"); // Redirect to StudentRequests.jsx
       }
     } else {
