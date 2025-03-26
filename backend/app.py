@@ -229,63 +229,6 @@ def student_dashboard(student_id):
     return jsonify(requests), 200  # Even if empty, return 200 with an empty list
 
 # Upload document route - this is our main student requests page route
-# @app.route("/api/student_request/<int:student_id>", methods=["POST"])
-# def student_request():
-#     print("Incoming request:", request.form)  # Debugging
-
-#     # Extract form data
-#     student_id = request.form.get("student_id")
-#     faculty_id = request.form.get("faculty_id")
-#     title = request.form.get("title")
-#     description = request.form.get("description")
-
-#     if not student_id or not faculty_id or not title or not description:
-#         print("Missing required fields")
-#         return jsonify({"error": "All fields are required"}), 400
-
-#     # Check if a file is uploaded
-#     if "file" not in request.files:
-#         print("No file found in request")
-#         return jsonify({"error": "No file part"}), 400
-
-#     file = request.files["file"]
-#     if file.filename == "":
-#         print("No file selected")
-#         return jsonify({"error": "No selected file"}), 400
-
-#     if file and allowed_file(file.filename):
-#         # Save file to uploads folder
-#         filename = secure_filename(file.filename)
-#         file_path = os.path.join("uploads", filename)  # Save path
-#         file.save(file_path)
-
-#         # Save document details in 'documents' table
-#         cursor = db.cursor()
-#         cursor.execute(
-#             "INSERT INTO documents (filename, uploaded_by, status) VALUES (%s, %s, %s)", 
-#             (file_path, student_id, "Pending")
-#         )
-#         db.commit()
-#         document_id = cursor.lastrowid  # Get the inserted document ID
-
-#         # Create request entry in 'requests' table
-#         cursor.execute(
-#             "INSERT INTO requests (student_id, faculty_id, document_url, status) VALUES (%s, %s, %s, %s)",
-#             (student_id, faculty_id, file_path, "pending")
-#         )
-#         db.commit()
-#         cursor.close()
-
-#         print(f"File uploaded successfully: {file_path}")
-#         return jsonify({
-#             "message": "Request submitted successfully",
-#             "document_id": document_id,
-#             "file_path": file_path
-#         }), 201
-
-#     print("Invalid file type")
-#     return jsonify({"error": "Invalid file type"}), 400
-
 @app.route("/api/student_request/<int:student_id>", methods=["POST"])
 def student_request(student_id):  # Accept student_id from URL
     print("Incoming request:", request.form)  # Debugging
