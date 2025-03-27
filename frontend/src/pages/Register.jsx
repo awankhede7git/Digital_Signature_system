@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
+import "./Register.css";
+
 
 function Register() {
   const [email, setEmail] = useState("");

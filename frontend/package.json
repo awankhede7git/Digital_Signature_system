@@ -9,11 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "concurrently \"cd ../backend && venv\\Scripts\\activate && python app.py\" \"npm run dev\""
-
   },
   "dependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-    "axios": "^1.8.2",
+    "axios": "^1.8.4",
     "crypto-browserify": "^3.12.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

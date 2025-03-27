@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; // Import useNavigate for redirection
+import "./Login.css";
+
 
 function Login() {
   const [email, setEmail] = useState("");

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import "./StudentDashboard.css";
+
 
 const backendUrl = "http://127.0.0.1:5000"; // Replace with your actual backend URL if different
 
