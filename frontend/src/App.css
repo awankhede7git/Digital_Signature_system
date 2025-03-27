@@ -1,50 +1,139 @@
-/* App.css */
-body {
-  font-family: 'Poppins', sans-serif;
-  background-color: #fde7f3; /* Soft pink */
-  color: #5e3a7b; /* Deep purple text */
-  text-align: center;
-  margin: 0;
-  padding: 0;
-}
-
-h2 {
-  color: #ff69b4; /* Hot pink heading */
-  font-size: 2rem;
-  margin-top: 20px;
-}
-
-nav {
-  background-color: #fff5fa; /* Light pastel pink */
-  padding: 10px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  display: inline-block;
-  margin: 20px auto;
-}
-
-nav a {
-  text-decoration: none;
-  color: #ff85c0; /* Soft pink links */
-  font-weight: bold;
-  font-size: 1.2rem;
-  margin: 0 10px;
-  transition: color 0.3s ease-in-out;
-}
-
-nav a:hover {
-  color: #c71585; /* Deep magenta hover */
-}
-
-div {
-  padding: 20px;
-}
-
-.routes-container {
-  background: #fff;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  max-width: 600px;
-  margin: 0 auto;
-}
+/* Main Container */
+.app-container {
+    display: flex;
+    width: 800px;
+    height: 450px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  /* Left Section */
+  .login-container {
+    flex: 1;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .login-container h2 {
+    font-size: 2rem;
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    margin: 15px 0;
+  }
+  
+  .input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 5px;
+  }
+  
+  .input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e91e63;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #f7f7f7;
+    transition: border 0.3s ease-in-out;
+  }
+  
+  .input-group input:focus {
+    border-color: #d81b60;
+    outline: none;
+  }
+  
+  /* Remember Me & Forgot Password */
+  .options {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+  
+  .options a {
+    text-decoration: none;
+    color: #e91e63;
+    font-weight: 500;
+  }
+  
+  .remember-me {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .remember-me input {
+    accent-color: #e91e63;
+  }
+  
+  /* Sign In Button */
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: linear-gradient(to right, #ff4081, #e91e63);
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+  }
+  
+  button:hover {
+    background: linear-gradient(to right, #e91e63, #c2185b);
+  }
+  
+  button:focus {
+    outline: none;
+  }
+  
+  /* Right Section */
+  .welcome-container {
+    flex: 1;
+    background: linear-gradient(to right, #ff758c, #ff7eb3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+  }
+  
+  .welcome-container h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+  }
+  
+  .welcome-container p {
+    margin: 10px 0;
+    font-size: 1rem;
+  }
+  
+  .signup-btn {
+    padding: 10px 20px;
+    border: 2px solid white;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+  }
+  
+  .signup-btn:hover {
+    background: white;
+    color: #e91e63;
+  }
+  

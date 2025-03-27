@@ -1,55 +1,65 @@
-/* Login.css */
-body {
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #a8e6cf, #ff8b94);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  margin: 0;
-}
-
-div {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  width: 300px;
-}
-
-h2 {
-  color: #333;
-  margin-bottom: 20px;
-}
-
-input {
-  width: 100%;
-  padding: 10px;
-  margin: 8px 0;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 16px;
-}
-
-button {
-  width: 100%;
-  padding: 10px;
-  background: #ff6f61;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 0.3s ease-in-out;
-}
-
-button:hover {
-  background: #ff3b30;
-}
-
-p {
-  font-size: 14px;
-  color: #555;
-  margin-top: 10px;
-}
+/* Container */
+.login-container {
+    width: 350px;
+    padding: 40px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  /* Heading */
+  .login-container h2 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  /* Input Fields */
+  .login-container input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid #e91e63;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #f7f7f7;
+    transition: border 0.3s ease-in-out;
+  }
+  
+  .login-container input:focus {
+    border-color: #d81b60;
+    outline: none;
+  }
+  
+  /* Login Button */
+  .login-container button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: linear-gradient(to right, #ff4081, #e91e63);
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+  }
+  
+  .login-container button:hover {
+    background: linear-gradient(to right, #e91e63, #c2185b);
+  }
+  
+  /* Message */
+  .login-container p {
+    margin-top: 10px;
+    color: #444;
+    font-size: 0.9rem;
+  }
+  
+  /* Role Display */
+  .role-display {
+    font-weight: bold;
+    color: #e91e63;
+  }
+  
