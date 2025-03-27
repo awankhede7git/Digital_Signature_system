@@ -1,0 +1,61 @@
+/* Container */
+.register-container {
+    width: 400px;
+    padding: 40px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  /* Heading */
+  .register-container h2 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 20px;
+  }
+  
+  /* Input Fields */
+  .register-container input,
+  .register-container select {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid #e91e63;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #f7f7f7;
+    transition: border 0.3s ease-in-out;
+  }
+  
+  .register-container input:focus,
+  .register-container select:focus {
+    border-color: #d81b60;
+    outline: none;
+  }
+  
+  /* Register Button */
+  .register-container button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: linear-gradient(to right, #ff4081, #e91e63);
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+  }
+  
+  .register-container button:hover {
+    background: linear-gradient(to right, #e91e63, #c2185b);
+  }
+  
+  /* Message */
+  .register-container p {
+    margin-top: 10px;
+    color: #444;
+    font-size: 0.9rem;
+  }
+  

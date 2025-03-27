@@ -1,0 +1,139 @@
+/* Main Container */
+.app-container {
+    display: flex;
+    width: 800px;
+    height: 450px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  /* Left Section */
+  .login-container {
+    flex: 1;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .login-container h2 {
+    font-size: 2rem;
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+  
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    margin: 15px 0;
+  }
+  
+  .input-group label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 5px;
+  }
+  
+  .input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e91e63;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: #f7f7f7;
+    transition: border 0.3s ease-in-out;
+  }
+  
+  .input-group input:focus {
+    border-color: #d81b60;
+    outline: none;
+  }
+  
+  /* Remember Me & Forgot Password */
+  .options {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+  
+  .options a {
+    text-decoration: none;
+    color: #e91e63;
+    font-weight: 500;
+  }
+  
+  .remember-me {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .remember-me input {
+    accent-color: #e91e63;
+  }
+  
+  /* Sign In Button */
+  button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    background: linear-gradient(to right, #ff4081, #e91e63);
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+  }
+  
+  button:hover {
+    background: linear-gradient(to right, #e91e63, #c2185b);
+  }
+  
+  button:focus {
+    outline: none;
+  }
+  
+  /* Right Section */
+  .welcome-container {
+    flex: 1;
+    background: linear-gradient(to right, #ff758c, #ff7eb3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+  }
+  
+  .welcome-container h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+  }
+  
+  .welcome-container p {
+    margin: 10px 0;
+    font-size: 1rem;
+  }
+  
+  .signup-btn {
+    padding: 10px 20px;
+    border: 2px solid white;
+    border-radius: 8px;
+    font-size: 1rem;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease-in-out;
+  }
+  
+  .signup-btn:hover {
+    background: white;
+    color: #e91e63;
+  }
+  
